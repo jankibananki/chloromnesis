@@ -90,7 +90,7 @@ def main():
 
     print("Model spreman!", flush=True)
 
-    # 9. Ucitavanje jednog batch-a
+    
     print("Ucitavanje batch-a", flush=True)
 
     images, labels = next(iter(train_loader))
@@ -98,7 +98,7 @@ def main():
 
     print("Ulaz:", images.shape, flush=True)
 
-    # 10. Prvi prolazak kroz model
+    
     print("Pokretanje predikcije", flush=True)
 
     with torch.inference_mode():
