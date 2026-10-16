@@ -62,3 +62,16 @@ print("Tensor dtype:", image_tensor.dtype)
 image_tensor=image_tensor.permute(2,0,1)
 image_tensor=image_tensor.unsqueeze(0)
 print("Final tensor shape:", image_tensor.shape)
+
+device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Izabrani uredjaj:", device)
+print("Pre prebacivanja:", image_tensor.device)
+
+image_tensor = image_tensor.to(device)
+
+print("Nakon prebacivanja:", image_tensor.device)
+
+if torch.cuda.is_available():
+    print("Graficka kartica:", torch.cuda.get_device_name(0))
+
+    
