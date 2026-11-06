@@ -110,5 +110,109 @@ def main():
     print("test uspesan", flush=True)
 
 
+    # Funkcija koja meri gresku modela
+    criterion = nn.CrossEntropyLoss()
+
+    # Optimizator azurira samo parametre koji nisu zamrznuti
+    optimizer = torch.optim.AdamW(
+        (p for p in model.parameters() if p.requires_grad),
+        lr=0.001
+    )
+
+    print("\n Prvi trening ", flush=True)
+    model.train()
+
+    #ne menja se ponasanje zamrznutog feature extractora
+    model.features.eval()
+
+    total_loss=0.0
+    correct=0
+    total=0
+
+    for batch_idx, (images,labels) in enumerate(train_loader):
+
+        images = images.to(device)
+        labels = labels.to(device)
+
+        #resetovanje gradijenta
+        optimizer.zero_grad()
+
+        #forward pass
+        outputs=model(images)
+
+        #racunanje greske
+        loss=criterion(outputs, labels)
+
+        #backpropagation
+        loss.backward()
+
+        #azuriranje parametara modela
+        optimizer.step()
+
+        #statistika
+        total_loss+=loss.item() * images.size(0)
+        predictions=outputs.argmax(dim=1)
+
+        correct+=(predictions==labels).sum().item()
+        total+=labels.size(0)
+
+        if(batch_idx+1)%25==0:
+            print(
+                f"Batch {batch_idx+1}/{len(train_loader)} | "
+                f"Loss: {total_loss/total:.4f} | "
+                f"Accuracy: {correct/total*100:.2f}%",
+                flush=True
+            )
+    
+    train_loss=total_loss/total
+    train_accuracy=correct/total*100
+
+    print("\n Rezultati treninga: ")
+    print(f"Loss: {train_loss:.4f}")
+    print(f"Accuracy: {train_accuracy:.2f}%")
+
+    print("\n Validacija: ", flush=True)
+
+    model.eval()
+
+    val_loss=0.0
+    val_correct=0
+    val_total=0
+
+    with torch.inference_mode():
+        for images, labels in val_loader:
+
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs=model(images)
+            loss=criterion(outputs,labels)
+
+            val_loss+=loss.item()*images.size(0)
+
+            predictions=outputs.argmax(dim=1)
+            val_correct+=(predictions==labels).sum().item()
+            val_total+=labels.size(0)
+
+    val_loss/=val_total
+    val_accuracy=val_correct/val_total*100
+
+    print(f"Validation loss: {val_loss:.4f}")
+    print(f"Validation accuracy: {val_accuracy:.2f}%")
+
+    models_dir=project_dir/"models"
+    models_dir.mkdir(parents=True, exist_ok=True)
+
+    checkpoint_path=models_dir/"chloromnesis_v1.pth"
+
+    torch.save({
+        "model_state_dict" : model.state_dict(),
+        "class_to_idx": class_to_idx,
+        "epoch" : 1,
+        "val_accuracy":val_accuracy
+    }, checkpoint_path)
+
+    print("Model sacuvan:", checkpoint_path)
+
 if __name__ == "__main__":
     main()
